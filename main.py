@@ -11,22 +11,6 @@ from sqlalchemy.orm import relationship
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 import os
 import smtplib
-# Optional: add contact me email functionality (Day 60)
-# import smtplib
-
-
-'''
-Make sure the required packages are installed: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from the requirements.txt for this project.
-'''
 
 
 app = Flask(__name__)
@@ -109,7 +93,6 @@ with app.app_context():
     db.create_all()
 
 
-# Create an admin-only decorator
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -190,7 +173,6 @@ def get_all_posts():
     return render_template("index.html", all_posts=posts, current_user=current_user, year = current_year)
 
 
-# Add a POST method to be able to post comments
 @app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
     requested_post = db.get_or_404(BlogPost, post_id)
@@ -212,7 +194,6 @@ def show_post(post_id):
     return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form, year = current_year)
 
 
-# Use a decorator so only an admin user can create new posts
 @app.route("/new-post", methods=["GET", "POST"])
 @admin_only
 def add_new_post():
@@ -229,11 +210,11 @@ def add_new_post():
         db.session.add(new_post)
         db.session.commit()
         return redirect(url_for("get_all_posts"))
-    return render_template("make-post.html", form=form, current_user=current_user)
+    return render_template("make-post.html", form=form, current_user=current_user, year = current_year)
 
 
-# Use a decorator so only an admin user can edit a post
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+@admin_only
 def edit_post(post_id):
     post = db.get_or_404(BlogPost, post_id)
     edit_form = CreatePostForm(
@@ -253,8 +234,6 @@ def edit_post(post_id):
         return redirect(url_for("show_post", post_id=post.id))
     return render_template("make-post.html", form=edit_form, is_edit=True, current_user=current_user, year = current_year)
 
-
-# Use a decorator so only an admin user can delete a post
 @app.route("/delete/<int:post_id>")
 @admin_only
 def delete_post(post_id):
@@ -269,14 +248,6 @@ def about():
     return render_template("about.html", current_user=current_user, year = current_year)
 
 
-# @app.route("/contact", methods=["GET", "POST"])
-# def contact():
-#     return render_template("contact.html", current_user=current_user)
-
-# Optional: You can inclue the email sending code from Day 60:
-# DON'T put your email and password here directly! The code will be visible when you upload to Github.
-# Use environment variables instead (Day 35)
-
 MAIL_ADDRESS = os.environ.get("EMAIL_KEY")
 MAIL_APP_PW = os.environ.get("PASSWORD_KEY")
 
@@ -284,17 +255,17 @@ MAIL_APP_PW = os.environ.get("PASSWORD_KEY")
 def contact():
     if request.method == "POST":
         data = request.form
-        send_email(data["name"], data["email"], data["phone"], data["message"])
-        return render_template("contact.html", msg_sent=True)
-    return render_template("contact.html", msg_sent=False)
+        send_email(data["name"], data["email"], data["phone"], data["message"])  
+        return render_template("contact.html", msg_sent=True, year = current_year)
+    return render_template("contact.html", msg_sent=False, year = current_year)
 
 
 def send_email(name, email, phone, message):
     email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
-    with smtplib.SMTP("smtp.gmail.com") as connection:
+    with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
         connection.starttls()
-        connection.login(MAIL_ADDRESS, MAIL_APP_PW)
-        connection.sendmail(MAIL_ADDRESS, MAIL_APP_PW, email_message)
+        connection.login(user=MAIL_ADDRESS, password=MAIL_APP_PW)
+        connection.sendmail(from_addr=MAIL_ADDRESS, to_addrs=MAIL_ADDRESS, msg=email_message)
 
 
 if __name__ == "__main__":
