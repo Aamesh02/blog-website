@@ -14,7 +14,7 @@ import smtplib
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.get_environ.get('FLASK_KEY')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
